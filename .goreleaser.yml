@@ -1,0 +1,136 @@
+# GoReleaser configuration for mvn-tui
+# Documentation: https://goreleaser.com
+
+version: 2
+
+before:
+  hooks:
+    # Ensure dependencies are up to date
+    - go mod tidy
+    - go mod download
+
+builds:
+  - id: mvn-tui
+    binary: mvn-tui
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    # Ignore these combinations
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    main: .
+
+archives:
+  - id: mvn-tui
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+
+# Homebrew tap configuration
+brews:
+  - name: mvn-tui
+    homepage: https://github.com/alexritt/mvn-tui
+    description: "Terminal UI for Maven - make common workflows fast and discoverable"
+    license: MIT
+    
+    # Create tap at github.com/alexritt/homebrew-tap
+    repository:
+      owner: alexritt
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.GITHUB_TOKEN }}"
+    
+    # Commit message template
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+    
+    # Folder inside the repository
+    folder: Formula
+    
+    # Custom install script
+    install: |
+      bin.install "mvn-tui"
+    
+    # Test the installation
+    test: |
+      system "#{bin}/mvn-tui", "--version"
+    
+    # Caveats shown after installation
+    caveats: |
+      mvn-tui is a Terminal User Interface for Maven.
+      
+      To get started:
+        cd /path/to/maven/project
+        mvn-tui
+      
+      Or create a new project:
+        mkdir my-project && cd my-project
+        mvn-tui
+      
+      For more information, visit:
+        https://github.com/alexritt/mvn-tui
+
+# GitHub release configuration
+release:
+  github:
+    owner: alexritt
+    name: mvn-tui
+  
+  draft: false
+  prerelease: auto
+  
+  name_template: "{{.ProjectName}} v{{.Version}}"
+  
+  header: |
+    ## mvn-tui {{.Version}}
+    
+    Terminal User Interface for Maven - make common workflows fast and discoverable.
+  
+  footer: |
+    **Full Changelog**: https://github.com/alexritt/mvn-tui/compare/{{.PreviousTag}}...{{.Tag}}
+    
+    ## Installation
+    
+    ### Homebrew (macOS/Linux)
+    ```bash
+    brew install alexritt/tap/mvn-tui
+    ```
+    
+    ### Manual Installation
+    Download the appropriate binary for your platform from the assets below.
