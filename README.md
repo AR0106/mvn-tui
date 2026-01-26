@@ -28,12 +28,12 @@ A Go/Bubbletea TUI that wraps Maven to make common workflows (build, test, run, 
 ### Homebrew (macOS/Linux)
 
 ```bash
-brew install alexritt/tap/mvn-tui
+brew install AR0106/tap/mvn-tui
 ```
 
 ### Download Binary
 
-Download the latest release for your platform from the [releases page](https://github.com/alexritt/mvn-tui/releases).
+Download the latest release for your platform from the [releases page](https://github.com/AR0106/mvn-tui/releases).
 
 Extract and move to your PATH:
 ```bash
@@ -48,13 +48,13 @@ mvn-tui --version
 ### Using Go Install
 
 ```bash
-go install github.com/alexritt/mvn-tui@latest
+go install github.com/AR0106/mvn-tui@latest
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/alexritt/mvn-tui.git
+git clone https://github.com/AR0106/mvn-tui.git
 cd mvn-tui
 go build -o mvn-tui
 ```
