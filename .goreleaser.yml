@@ -71,6 +71,7 @@ brews:
     repository:
       owner: AR0106
       name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
 
     # Commit message template
     commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
