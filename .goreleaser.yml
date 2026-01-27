@@ -46,7 +46,7 @@ archives:
       - README.md
 
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
 
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
@@ -55,77 +55,77 @@ changelog:
   sort: asc
   filters:
     exclude:
-      - '^docs:'
-      - '^test:'
-      - '^chore:'
-      - '^ci:'
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
 
 # Homebrew tap configuration
 brews:
   - name: mvn-tui
-    homepage: https://github.com/alexritt/mvn-tui
+    homepage: https://github.com/AR0106/mvn-tui
     description: "Terminal UI for Maven - make common workflows fast and discoverable"
     license: MIT
-    
-    # Create tap at github.com/alexritt/homebrew-tap
+
+    # Create tap at github.com/AR0106/homebrew-tap
     repository:
-      owner: alexritt
+      owner: AR0106
       name: homebrew-tap
-    
+
     # Commit message template
     commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
-    
+
     # Folder inside the repository
     directory: Formula
-    
+
     # Custom install script
     install: |
       bin.install "mvn-tui"
-    
+
     # Test the installation
     test: |
       system "#{bin}/mvn-tui", "--version"
-    
+
     # Caveats shown after installation
     caveats: |
       mvn-tui is a Terminal User Interface for Maven.
-      
+
       To get started:
         cd /path/to/maven/project
         mvn-tui
-      
+
       Or create a new project:
         mkdir my-project && cd my-project
         mvn-tui
-      
+
       For more information, visit:
-        https://github.com/alexritt/mvn-tui
+        https://github.com/AR0106/mvn-tui
 
 # GitHub release configuration
 release:
   github:
-    owner: alexritt
+    owner: AR0106
     name: mvn-tui
-  
+
   draft: false
   prerelease: auto
-  
+
   name_template: "{{.ProjectName}} v{{.Version}}"
-  
+
   header: |
     ## mvn-tui {{.Version}}
-    
+
     Terminal User Interface for Maven - make common workflows fast and discoverable.
-  
+
   footer: |
-    **Full Changelog**: https://github.com/alexritt/mvn-tui/compare/{{.PreviousTag}}...{{.Tag}}
-    
+    **Full Changelog**: https://github.com/AR0106/mvn-tui/compare/{{.PreviousTag}}...{{.Tag}}
+
     ## Installation
-    
+
     ### Homebrew (macOS/Linux)
     ```bash
-    brew install alexritt/tap/mvn-tui
+    brew install AR0106/tap/mvn-tui
     ```
-    
+
     ### Manual Installation
     Download the appropriate binary for your platform from the assets below.

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/alexritt/mvn-tui/maven"
-	"github.com/alexritt/mvn-tui/ui"
+	"github.com/AR0106/mvn-tui/maven"
+	"github.com/AR0106/mvn-tui/ui"
 	tea "github.com/charmbracelet/bubbletea"
 )
 

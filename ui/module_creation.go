@@ -3,7 +3,7 @@ package ui
 import (
 	"fmt"
 
-	"github.com/alexritt/mvn-tui/maven"
+	"github.com/AR0106/mvn-tui/maven"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"

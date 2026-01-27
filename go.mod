@@ -1,4 +1,4 @@
-module github.com/alexritt/mvn-tui
+module github.com/AR0106/mvn-tui
 
 go 1.25.5
 

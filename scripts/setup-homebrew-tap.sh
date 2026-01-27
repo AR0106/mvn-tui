@@ -3,7 +3,7 @@
 
 set -e
 
-TAP_REPO="alexritt/homebrew-tap"
+TAP_REPO="AR0106/homebrew-tap"
 TAP_URL="https://github.com/${TAP_REPO}.git"
 
 echo "🍺 Setting up Homebrew Tap for mvn-tui"
@@ -38,7 +38,7 @@ This tap contains Homebrew formulas for mvn-tui.
 ## Installation
 
 ```bash
-brew install alexritt/tap/mvn-tui
+brew install AR0106/tap/mvn-tui
 ```
 
 ## About mvn-tui
@@ -55,7 +55,7 @@ Terminal User Interface for Maven - make common workflows fast and discoverable.
 - Command history and log viewer
 - Real-time command execution with cancellation
 
-For more information, visit: https://github.com/alexritt/mvn-tui
+For more information, visit: https://github.com/AR0106/mvn-tui
 
 ## Formulae
 
@@ -80,6 +80,6 @@ echo ""
 echo "Next steps:"
 echo "  1. Create a release: git tag -a v0.1.0 -m 'Release v0.1.0' && git push origin v0.1.0"
 echo "  2. Wait for GitHub Actions to build and publish"
-echo "  3. Install with: brew install alexritt/tap/mvn-tui"
+echo "  3. Install with: brew install AR0106/tap/mvn-tui"
 echo ""
 echo "See RELEASING.md for detailed release instructions."
