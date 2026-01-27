@@ -30,20 +30,20 @@ builds:
       - -X main.date={{.Date}}
     main: .
 
-archive:
-  name_template: >-
-    {{ .ProjectName }}_
-    {{- title .Os }}_
-    {{- if eq .Arch "amd64" }}x86_64
-    {{- else if eq .Arch "386" }}i386
-    {{- else }}{{ .Arch }}{{ end }}
-    {{- if .Arm }}v{{ .Arm }}{{ end }}
-  format_overrides:
-    - goos: windows
-      format: zip
-  files:
-    - LICENSE
-    - README.md
+archives:
+  - name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
 
 checksum:
   name_template: 'checksums.txt'
@@ -61,45 +61,45 @@ changelog:
       - '^ci:'
 
 # Homebrew tap configuration
-brew:
-  name: mvn-tui
-  homepage: https://github.com/alexritt/mvn-tui
-  description: "Terminal UI for Maven - make common workflows fast and discoverable"
-  license: MIT
-  
-  # Create tap at github.com/alexritt/homebrew-tap
-  github:
-    owner: alexritt
-    name: homebrew-tap
-  
-  # Commit message template
-  commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
-  
-  # Folder inside the repository
-  folder: Formula
-  
-  # Custom install script
-  install: |
-    bin.install "mvn-tui"
-  
-  # Test the installation
-  test: |
-    system "#{bin}/mvn-tui", "--version"
-  
-  # Caveats shown after installation
-  caveats: |
-    mvn-tui is a Terminal User Interface for Maven.
+brews:
+  - name: mvn-tui
+    homepage: https://github.com/alexritt/mvn-tui
+    description: "Terminal UI for Maven - make common workflows fast and discoverable"
+    license: MIT
     
-    To get started:
-      cd /path/to/maven/project
-      mvn-tui
+    # Create tap at github.com/alexritt/homebrew-tap
+    repository:
+      owner: alexritt
+      name: homebrew-tap
     
-    Or create a new project:
-      mkdir my-project && cd my-project
-      mvn-tui
+    # Commit message template
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
     
-    For more information, visit:
-      https://github.com/alexritt/mvn-tui
+    # Folder inside the repository
+    directory: Formula
+    
+    # Custom install script
+    install: |
+      bin.install "mvn-tui"
+    
+    # Test the installation
+    test: |
+      system "#{bin}/mvn-tui", "--version"
+    
+    # Caveats shown after installation
+    caveats: |
+      mvn-tui is a Terminal User Interface for Maven.
+      
+      To get started:
+        cd /path/to/maven/project
+        mvn-tui
+      
+      Or create a new project:
+        mkdir my-project && cd my-project
+        mvn-tui
+      
+      For more information, visit:
+        https://github.com/alexritt/mvn-tui
 
 # GitHub release configuration
 release:
