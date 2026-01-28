@@ -12,7 +12,7 @@ A Go/Bubbletea TUI that wraps Maven to make common workflows (build, test, run, 
 - **Quick Task Access**: Common Maven lifecycle goals at your fingertips
 - **Smart Run Detection**: Automatically detects project type and provides appropriate run tasks
   - Spring Boot applications: `spring-boot:run`
-  - Standard JAR projects: `exec:java`
+  - Standard JAR projects: `compile exec:java` (with fallback options)
   - WAR projects: `tomcat7:run`
 - **Quick Run Shortcut**: Press **R** to instantly run your application
 - **Profile Management**: Enable/disable Maven profiles interactively
@@ -203,13 +203,23 @@ The tool will generate the XML snippet for you to copy into your pom.xml.
 ### Run Tasks (Auto-detected based on project type)
 
 - **Run (Spring Boot)**: Available for Spring Boot projects - executes `spring-boot:run`
-- **Run (exec:java)**: Available for JAR projects - executes `exec:java` 
+- **Run (Java)**: Available for JAR projects - executes `compile exec:java -Dexec.mainClass=<GroupId>.App`
+  - Compiles the project first, then runs it
+  - Automatically uses the main class based on your GroupId (e.g., `com.example.App`)
+  - Most reliable option for standard Maven projects
+- **Run (exec:java only)**: Available for JAR projects - executes `exec:java -Dexec.mainClass=<GroupId>.App`
+  - Runs without compiling first (faster if already compiled)
+  - Fallback option if the main run task has issues
 - **Run (Tomcat)**: Available for WAR projects - executes `tomcat7:run`
 
 The available run tasks are automatically detected based on:
 - Packaging type (`jar`, `war`)
 - Dependencies (Spring Boot starter detection)
 - Parent POM (Spring Boot parent detection)
+
+**Note**: For JAR projects, the run tasks assume your main class follows the Maven convention: `<GroupId>.App`. If your main class has a different name, you can either:
+1. Use the Custom Goal feature (press `C`) and enter: `compile exec:java -Dexec.mainClass=your.package.YourMainClass`
+2. Configure the exec-maven-plugin in your `pom.xml` with the correct mainClass
 
 Use the **R** key for quick access to run your application!
 
@@ -249,6 +259,59 @@ go test ./...
 - Go 1.21 or later
 - Maven (or mvnw wrapper in your project)
 - A terminal with support for ANSI colors
+
+## Troubleshooting
+
+### Project Creation Issues
+
+**Problem**: "Property version is missing" or "Property package is missing" error when creating a project.
+
+**Solution**: Make sure to fill in all required fields (Group ID, Artifact ID, Version, and Package) before pressing Enter. The UI will show a warning if any fields are empty.
+
+### Run Task Issues
+
+**Problem**: `exec:java` fails with "The parameters 'mainClass' for goal org.codehaus.mojo:exec-maven-plugin:X.X.X:java are missing or invalid"
+
+**Solution**: 
+1. Use the "Run (Java)" task instead of "Run (exec:java only)" - it compiles first and is more reliable
+2. If your main class is not named `App` or not in the root package, use the Custom Goal feature:
+   - Press `C` to open custom goal input
+   - Enter: `compile exec:java -Dexec.mainClass=your.package.MainClassName`
+3. Alternatively, configure the exec-maven-plugin in your `pom.xml`:
+```xml
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.codehaus.mojo</groupId>
+      <artifactId>exec-maven-plugin</artifactId>
+      <version>3.1.0</version>
+      <configuration>
+        <mainClass>your.package.MainClassName</mainClass>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
+```
+
+**Problem**: Application runs but doesn't show output
+
+**Solution**: Maven may be buffering output. Try running with the custom goal: `compile exec:java -Dexec.mainClass=your.Main -Dexec.cleanupDaemonThreads=false`
+
+### General Issues
+
+**Problem**: mvn-tui doesn't start or shows "No pom.xml found"
+
+**Solution**: 
+- Make sure you're running mvn-tui from a directory containing a `pom.xml` file or one of its subdirectories
+- If creating a new project, mvn-tui will automatically open the project creation wizard
+- To create a project in an empty directory, start mvn-tui there and it will prompt you
+
+**Problem**: Maven commands fail with "command not found"
+
+**Solution**: 
+- Ensure Maven is installed and available in your PATH
+- Alternatively, use a Maven wrapper (`mvnw`) in your project root
+- Check Maven installation: `mvn --version`
 
 ## Contributing
 

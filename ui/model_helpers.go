@@ -35,9 +35,18 @@ func BuiltInTasks(project *maven.Project) []Task {
 		if project.Packaging == "jar" && !project.HasSpringBoot {
 			// Use a sensible default mainClass based on groupId (e.g., com.example.App)
 			mainClass := project.GroupID + ".App"
+
+			// Add primary run task with compile first (more reliable)
 			tasks = append(tasks, Task{
-				Name:        "Run (exec:java)",
-				Description: "Run Java application with exec plugin",
+				Name:        "Run (Java)",
+				Description: "Compile and run Java application",
+				Goals:       []string{"compile", "exec:java", "-Dexec.mainClass=" + mainClass},
+			})
+
+			// Add fallback direct exec:java task
+			tasks = append(tasks, Task{
+				Name:        "Run (exec:java only)",
+				Description: "Run with exec plugin (no compile)",
 				Goals:       []string{"exec:java", "-Dexec.mainClass=" + mainClass},
 			})
 		}
