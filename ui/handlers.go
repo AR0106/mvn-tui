@@ -48,6 +48,12 @@ func (m *Model) handleProjectCreation() (Model, tea.Cmd) {
 		return *m, nil
 	}
 
+	// Validate that all required fields are filled
+	if !m.projectCreation.IsValid() {
+		// Don't proceed if validation fails - just return and let the view show the error
+		return *m, nil
+	}
+
 	cmd := m.projectCreation.BuildCreateCommand()
 	m.logBuffer = []string{fmt.Sprintf("Creating project: %s", cmd.String()), ""}
 	m.running = true

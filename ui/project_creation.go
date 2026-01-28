@@ -148,6 +148,14 @@ func (pc ProjectCreation) View(width, height int, showNoPomMessage bool) string 
 		content += input.View() + "\n"
 	}
 
+	// Show validation message if any field is empty
+	if !pc.IsValid() {
+		errorStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("9")).
+			Italic(true)
+		content += "\n" + errorStyle.Render("⚠ All fields are required")
+	}
+
 	if showNoPomMessage {
 		content += "\nPress Enter to create project, Q to quit"
 	} else {
@@ -157,17 +165,42 @@ func (pc ProjectCreation) View(width, height int, showNoPomMessage bool) string 
 	return style.Render(content)
 }
 
+// IsValid checks if all required inputs have values
+func (pc ProjectCreation) IsValid() bool {
+	for _, input := range pc.inputs {
+		if input.Value() == "" {
+			return false
+		}
+	}
+	return true
+}
+
+// getValueOrDefault returns the input value or its placeholder if empty
+func (pc ProjectCreation) getValueOrDefault(index int) string {
+	value := pc.inputs[index].Value()
+	if value == "" {
+		return pc.inputs[index].Placeholder
+	}
+	return value
+}
+
 // BuildCreateCommand creates the Maven archetype:generate command
 func (pc ProjectCreation) BuildCreateCommand() maven.Command {
 	arch := pc.archetypes[pc.selectedArch]
 
+	// Use values or fall back to placeholders
+	groupId := pc.getValueOrDefault(0)
+	artifactId := pc.getValueOrDefault(1)
+	version := pc.getValueOrDefault(2)
+	packageName := pc.getValueOrDefault(3)
+
 	args := []string{
 		"archetype:generate",
 		"-DinteractiveMode=false",
-		fmt.Sprintf("-DgroupId=%s", pc.inputs[0].Value()),
-		fmt.Sprintf("-DartifactId=%s", pc.inputs[1].Value()),
-		fmt.Sprintf("-Dversion=%s", pc.inputs[2].Value()),
-		fmt.Sprintf("-Dpackage=%s", pc.inputs[3].Value()),
+		fmt.Sprintf("-DgroupId=%s", groupId),
+		fmt.Sprintf("-DartifactId=%s", artifactId),
+		fmt.Sprintf("-Dversion=%s", version),
+		fmt.Sprintf("-Dpackage=%s", packageName),
 		fmt.Sprintf("-DarchetypeGroupId=%s", arch.GroupID),
 		fmt.Sprintf("-DarchetypeArtifactId=%s", arch.ArtifactID),
 		fmt.Sprintf("-DarchetypeVersion=%s", arch.Version),
@@ -177,6 +210,6 @@ func (pc ProjectCreation) BuildCreateCommand() maven.Command {
 		Executable: "mvn",
 		Args:       args,
 		PrettyArgs: fmt.Sprintf("archetype:generate -DgroupId=%s -DartifactId=%s",
-			pc.inputs[0].Value(), pc.inputs[1].Value()),
+			groupId, artifactId),
 	}
 }
