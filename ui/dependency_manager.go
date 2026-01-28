@@ -183,14 +183,6 @@ func NewDependencyManager() DependencyManager {
 	}
 }
 
-type dependencyItem struct {
-	dep CommonDependency
-}
-
-func (i dependencyItem) Title() string       { return i.dep.Name }
-func (i dependencyItem) Description() string { return i.dep.Description }
-func (i dependencyItem) FilterValue() string { return i.dep.Name }
-
 // Update handles dependency manager updates
 func (dm *DependencyManager) Update(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
