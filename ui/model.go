@@ -132,22 +132,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			(m.currentView == ViewDependencyManager && m.dependencyManager != nil && m.dependencyManager.IsCustomMode())
 
 		if !isTextInputView {
-			return m.handleKeyPress(msg)
-		}
-		// For text input views, only handle special keys
-		switch msg.String() {
-		case "ctrl+c":
-			if m.running && m.cancelFunc != nil {
-				m.cancelFunc()
-				m.logBuffer = append(m.logBuffer, "", "Cancelling command...")
-				m.updateLogViewport()
-				return m, nil
+			// Try to handle as a command key first
+			handled, keyCmd := m.handleKeyPress(msg)
+			if handled {
+				return m, keyCmd
 			}
-			return m, tea.Quit
-		case "esc":
-			return m.handleEscapeKey()
-		case "enter":
-			return m.handleEnter()
+			// Key not handled, let it fall through to component updates
+		} else {
+			// For text input views, only handle special keys
+			switch msg.String() {
+			case "ctrl+c":
+				if m.running && m.cancelFunc != nil {
+					m.cancelFunc()
+					m.logBuffer = append(m.logBuffer, "", "Cancelling command...")
+					m.updateLogViewport()
+					return m, nil
+				}
+				return m, tea.Quit
+			case "esc":
+				return m.handleEscapeKey()
+			case "enter":
+				return m.handleEnter()
+			}
 		}
 	}
 
@@ -193,7 +199,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // handleKeyPress handles keyboard input
-func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+// Returns (handled, cmd) where handled indicates if the key was processed
+func (m *Model) handleKeyPress(msg tea.KeyMsg) (bool, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c":
 		// If a command is running, cancel it instead of quitting
@@ -201,25 +208,25 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.cancelFunc()
 			m.logBuffer = append(m.logBuffer, "", "Cancelling command...")
 			m.updateLogViewport()
-			return m, nil
+			return true, nil
 		}
 		// Otherwise, quit the application
-		return m, tea.Quit
+		return true, tea.Quit
 
 	case "q":
 		// Don't allow quitting while a command is running
 		if m.running {
-			return m, nil
+			return true, nil
 		}
-		return m, tea.Quit
+		return true, tea.Quit
 
 	case "tab":
 		m.focusedPane = (m.focusedPane + 1) % 3
-		return m, nil
+		return true, nil
 
 	case "shift+tab":
 		m.focusedPane = (m.focusedPane - 1 + 3) % 3
-		return m, nil
+		return true, nil
 
 	case "l":
 		if m.currentView == ViewMain {
@@ -228,7 +235,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		} else if m.currentView == ViewLogs {
 			m.currentView = ViewMain
 		}
-		return m, nil
+		return true, nil
 
 	case "h":
 		if m.currentView == ViewMain {
@@ -236,7 +243,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		} else if m.currentView == ViewHistory {
 			m.currentView = ViewMain
 		}
-		return m, nil
+		return true, nil
 
 	case "p":
 		if m.currentView == ViewMain {
@@ -246,35 +253,39 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		} else if m.currentView == ViewProjectCreation {
 			m.currentView = ViewMain
 		}
-		return m, nil
+		return true, nil
 
 	case "esc":
-		return m.handleEscapeKey()
+		_, cmd := m.handleEscapeKey()
+		return true, cmd
 
 	case "enter":
-		return m.handleEnter()
+		_, cmd := m.handleEnter()
+		return true, cmd
 
 	case " ":
-		return m.handleSpace()
+		_, cmd := m.handleSpace()
+		return true, cmd
 
 	case "1":
 		m.options.SkipTests = !m.options.SkipTests
-		return m, nil
+		return true, nil
 
 	case "2":
 		m.options.Offline = !m.options.Offline
-		return m, nil
+		return true, nil
 
 	case "3":
 		m.options.UpdateSnapshots = !m.options.UpdateSnapshots
-		return m, nil
+		return true, nil
 
 	case "r":
 		// Quick run - execute the first run task found
 		if m.currentView == ViewMain {
-			return m.quickRun()
+			_, cmd := m.quickRun()
+			return true, cmd
 		}
-		return m, nil
+		return true, nil
 
 	case "m":
 		// Create new module
@@ -285,7 +296,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		} else if m.currentView == ViewModuleCreation {
 			m.currentView = ViewMain
 		}
-		return m, nil
+		return true, nil
 
 	case "d":
 		// Add dependency
@@ -296,10 +307,11 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		} else if m.currentView == ViewDependencyManager {
 			m.currentView = ViewMain
 		}
-		return m, nil
+		return true, nil
 	}
 
-	return m, nil
+	// Key not handled - allow it to pass through to components
+	return false, nil
 }
 
 // handleEscapeKey handles the Escape key press based on context
