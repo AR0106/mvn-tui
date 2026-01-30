@@ -204,6 +204,9 @@ func (pc ProjectCreation) BuildCreateCommand() maven.Command {
 		fmt.Sprintf("-DarchetypeGroupId=%s", arch.GroupID),
 		fmt.Sprintf("-DarchetypeArtifactId=%s", arch.ArtifactID),
 		fmt.Sprintf("-DarchetypeVersion=%s", arch.Version),
+		// Set Java version to 1.8 to avoid "Source option 7 is no longer supported" errors
+		"-Dmaven.compiler.source=1.8",
+		"-Dmaven.compiler.target=1.8",
 	}
 
 	return maven.Command{

@@ -156,7 +156,7 @@ func (m *Model) handleDependencyAddition() (Model, tea.Cmd) {
 	depXML.WriteString("    </dependency>")
 
 	m.logBuffer = []string{
-		fmt.Sprintf("Add this dependency to your pom.xml:"),
+		"Add this dependency to your pom.xml:",
 		"",
 		depXML.String(),
 		"",

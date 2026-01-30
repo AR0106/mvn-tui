@@ -134,6 +134,9 @@ func (mc ModuleCreation) BuildCreateModuleCommand(projectRoot string) maven.Comm
 		"-DarchetypeGroupId=org.apache.maven.archetypes",
 		"-DarchetypeArtifactId=maven-archetype-quickstart",
 		"-DarchetypeVersion=1.4",
+		// Set Java version to 1.8 to avoid "Source option 7 is no longer supported" errors
+		"-Dmaven.compiler.source=1.8",
+		"-Dmaven.compiler.target=1.8",
 	}
 
 	return maven.Command{
