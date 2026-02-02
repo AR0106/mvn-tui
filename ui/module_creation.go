@@ -2,12 +2,20 @@ package ui
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/AR0106/mvn-tui/maven"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+// Maven artifact ID pattern: must start with letter, can contain letters, digits, hyphens, underscores, periods
+var moduleValidArtifactIDPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9._-]*$`)
+
+// Maven group ID pattern: similar to artifact ID but typically uses dots for package structure
+var moduleValidGroupIDPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9._-]*(\.[a-zA-Z][a-zA-Z0-9._-]*)*$`)
 
 // ModuleCreation represents the module creation flow state
 type ModuleCreation struct {
@@ -27,12 +35,12 @@ func NewModuleCreation() ModuleCreation {
 
 	inputs[1] = textinput.New()
 	inputs[1].Placeholder = "com.example"
-	inputs[1].Prompt = "Group ID: "
+	inputs[1].Prompt = "Organization: "
 	inputs[1].Width = 50
 
 	inputs[2] = textinput.New()
 	inputs[2].Placeholder = "my-module"
-	inputs[2].Prompt = "Artifact ID: "
+	inputs[2].Prompt = "Module ID: "
 	inputs[2].Width = 50
 
 	inputs[3] = textinput.New()
@@ -96,29 +104,82 @@ func (mc ModuleCreation) View(width, height int) string {
 		content += input.View() + "\n"
 	}
 
-	content += "\nPress Enter to create module, Esc to cancel"
+	// Show validation messages
+	errorStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("9")).
+		Italic(true)
+
+	validationErrors := mc.GetValidationErrors()
+	if len(validationErrors) > 0 {
+		content += "\n"
+		for _, err := range validationErrors {
+			content += errorStyle.Render("⚠ "+err) + "\n"
+		}
+	}
+
+	content += "\n"
+	helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("242"))
+	content += helpStyle.Render("Tab/Shift+Tab: Navigate fields | Enter: Create module | Esc: Cancel")
 
 	return style.Render(content)
 }
 
+// IsValid checks if all required inputs have values and are valid
+func (mc ModuleCreation) IsValid() bool {
+	return len(mc.GetValidationErrors()) == 0
+}
+
+// GetValidationErrors returns a list of validation error messages
+func (mc ModuleCreation) GetValidationErrors() []string {
+	var errors []string
+
+	// Check Module Name
+	moduleNameValue := strings.TrimSpace(mc.inputs[0].Value())
+	if moduleNameValue == "" {
+		errors = append(errors, "Module Name is required")
+	} else if strings.Contains(moduleNameValue, " ") {
+		errors = append(errors, "Module Name cannot contain spaces (use hyphens or underscores instead)")
+	} else if !moduleValidArtifactIDPattern.MatchString(moduleNameValue) {
+		errors = append(errors, "Module Name must start with a letter and contain only letters, digits, hyphens, underscores, and periods")
+	}
+
+	// Check Organization (Group ID) - optional but if provided must be valid
+	orgValue := strings.TrimSpace(mc.inputs[1].Value())
+	if orgValue != "" && !moduleValidGroupIDPattern.MatchString(orgValue) {
+		errors = append(errors, "Organization must start with a letter and contain only letters, digits, dots, hyphens, and underscores (e.g., com.example)")
+	}
+
+	// Check Module ID (Artifact ID) - optional but if provided must be valid
+	moduleIDValue := strings.TrimSpace(mc.inputs[2].Value())
+	if moduleIDValue != "" {
+		if strings.Contains(moduleIDValue, " ") {
+			errors = append(errors, "Module ID cannot contain spaces (use hyphens or underscores instead)")
+		} else if !moduleValidArtifactIDPattern.MatchString(moduleIDValue) {
+			errors = append(errors, "Module ID must start with a letter and contain only letters, digits, hyphens, underscores, and periods")
+		}
+	}
+
+	return errors
+}
+
 // BuildCreateModuleCommand creates the command to create a new module
 func (mc ModuleCreation) BuildCreateModuleCommand(projectRoot string) maven.Command {
-	moduleName := mc.inputs[0].Value()
+	moduleName := strings.TrimSpace(mc.inputs[0].Value())
 	if moduleName == "" {
 		moduleName = "my-module"
 	}
 
-	groupId := mc.inputs[1].Value()
+	groupId := strings.TrimSpace(mc.inputs[1].Value())
 	if groupId == "" {
 		groupId = "com.example"
 	}
 
-	artifactId := mc.inputs[2].Value()
+	artifactId := strings.TrimSpace(mc.inputs[2].Value())
 	if artifactId == "" {
 		artifactId = moduleName
 	}
 
-	version := mc.inputs[3].Value()
+	version := strings.TrimSpace(mc.inputs[3].Value())
 	if version == "" {
 		version = "1.0-SNAPSHOT"
 	}
@@ -142,13 +203,13 @@ func (mc ModuleCreation) BuildCreateModuleCommand(projectRoot string) maven.Comm
 	return maven.Command{
 		Executable: "mvn",
 		Args:       args,
-		PrettyArgs: fmt.Sprintf("archetype:generate -DartifactId=%s", artifactId),
+		PrettyArgs: fmt.Sprintf("Creating module: %s", moduleName),
 	}
 }
 
 // GetModuleName returns the module name
 func (mc ModuleCreation) GetModuleName() string {
-	name := mc.inputs[0].Value()
+	name := strings.TrimSpace(mc.inputs[0].Value())
 	if name == "" {
 		return "my-module"
 	}

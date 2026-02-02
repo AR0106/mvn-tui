@@ -81,6 +81,14 @@ cd my-new-project
 mvn-tui
 ```
 
+The project creation wizard features:
+- **Flexible folder naming**: Separate "Folder Name" field that can contain spaces (e.g., "Code 2-2")
+- **User-friendly field names**: "Organization" instead of "Group ID", "Project ID" instead of "Artifact ID"
+- **Easy project type selection**: Use ← → arrow keys to switch between Java Application, Spring Boot App, and Web Application
+- **Visual project type indicator**: Current selection is clearly highlighted
+- **Default Java project**: Quick creation of standard Java console applications
+- **Smart validation**: Prevents invalid Maven artifact IDs while allowing flexible folder names
+
 You can also press **P** from the main view to create a new project at any time.
 
 ## Keybindings
@@ -116,9 +124,10 @@ You can also press **P** from the main view to create a new project at any time.
 
 ### Project Creation View
 
-- **Tab / ↑/↓**: Navigate between input fields
+- **← / →**: Change project type (Java Application, Spring Boot App, Web Application)
+- **Tab / Shift+Tab / ↑/↓**: Navigate between input fields
 - **Enter**: Create project
-- **Esc**: Cancel and return to main view
+- **Esc**: Cancel and return to main view (or Q to quit if no project loaded)
 
 ### Module Creation View
 
@@ -150,13 +159,25 @@ mvn-tui/
 └── README.md
 ```
 
+## Project Creation Fields
+
+When creating a new project, you'll be prompted for:
+
+- **Folder Name**: Directory name for your project (can contain spaces, e.g., "Code 2-2")
+- **Organization**: Maven group ID (e.g., com.example) - must be a valid Java package name
+- **Project ID**: Maven artifact ID (e.g., "code-2-2") - no spaces, use hyphens or underscores
+- **Version**: Project version (default: 1.0-SNAPSHOT)
+- **Base Package**: Base Java package for your code (e.g., com.example)
+
+**Note**: The Folder Name and Project ID can be different. This allows you to have a folder named "Code 2-2" while Maven uses "code-2-2" as the artifact ID. The project will be created with the Maven artifact ID, then automatically renamed to your desired folder name.
+
 ## Module Creation
 
-Press **M** from the main view to create a new Maven module. You'll be prompted for:
+When creating a new module in a multi-module project (press **M**):
 
 - **Module Name**: Name of the new module directory
-- **Group ID**: Maven group ID (e.g., com.example)
-- **Artifact ID**: Maven artifact ID
+- **Organization**: Maven group ID (e.g., com.example)
+- **Module ID**: Maven artifact ID for the module
 - **Version**: Module version (default: 1.0-SNAPSHOT)
 
 The module will be created using the Maven quickstart archetype, and **mvn-tui will automatically add it to your parent pom.xml's `<modules>` section**. The project will be reloaded and the new module will appear in the modules list.
@@ -182,7 +203,7 @@ Choose from a curated list of popular dependencies:
 
 Select "Custom Dependency" from the list to enter your own:
 - **Group ID**: Maven group ID
-- **Artifact ID**: Maven artifact ID
+- **Library Name**: Maven artifact ID of the dependency
 - **Version**: Dependency version
 - **Scope**: Dependency scope (compile, test, runtime, provided)
 
@@ -264,9 +285,28 @@ go test ./...
 
 ### Project Creation Issues
 
+**Problem**: I want my project folder to be named "Code 2-2" (with spaces).
+
+**Solution**: Use the new **Folder Name** field! You can now create projects with folder names containing spaces:
+- **Folder Name**: "Code 2-2" (can have spaces)
+- **Project ID**: "code-2-2" (Maven artifact ID - no spaces)
+
+The project will be created with the valid Maven artifact ID, then automatically renamed to your desired folder name with spaces.
+
+**Problem**: Maven error "'artifactId' with value 'XXX' does not match a valid id pattern" when creating a project.
+
+**Solution**: The **Project ID** field (Maven artifact ID) cannot contain spaces or special characters. Maven artifact IDs must:
+- Start with a letter (not a number)
+- Contain only letters, digits, hyphens (-), underscores (_), and periods (.)
+- **NO SPACES** - use hyphens or underscores (e.g., "code-2-2" or "code_2_2")
+
+The **Folder Name** field CAN contain spaces - use that for your desired directory name.
+
+The UI will validate your input and show specific error messages if the Project ID is invalid.
+
 **Problem**: "Property version is missing" or "Property package is missing" error when creating a project.
 
-**Solution**: Make sure to fill in all required fields (Group ID, Artifact ID, Version, and Package) before pressing Enter. The UI will show a warning if any fields are empty.
+**Solution**: Make sure to fill in all required fields (Folder Name, Organization, Project ID, Version, and Base Package) before pressing Enter. The UI will show validation errors for any empty or invalid fields. You can also use the ← → arrow keys to change the project type before creating the project.
 
 ### Run Task Issues
 

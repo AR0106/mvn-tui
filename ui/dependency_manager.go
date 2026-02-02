@@ -157,21 +157,25 @@ func NewDependencyManager() DependencyManager {
 	inputs[0].Placeholder = "org.example"
 	inputs[0].Prompt = "Group ID: "
 	inputs[0].Width = 50
+	inputs[0].CharLimit = 100
 
 	inputs[1] = textinput.New()
 	inputs[1].Placeholder = "my-library"
-	inputs[1].Prompt = "Artifact ID: "
+	inputs[1].Prompt = "Library Name: "
 	inputs[1].Width = 50
+	inputs[1].CharLimit = 100
 
 	inputs[2] = textinput.New()
 	inputs[2].Placeholder = "1.0.0"
 	inputs[2].Prompt = "Version: "
 	inputs[2].Width = 50
+	inputs[2].CharLimit = 50
 
 	inputs[3] = textinput.New()
 	inputs[3].Placeholder = "compile (optional)"
 	inputs[3].Prompt = "Scope: "
 	inputs[3].Width = 50
+	inputs[3].CharLimit = 20
 
 	return DependencyManager{
 		commonDeps:     commonDeps,

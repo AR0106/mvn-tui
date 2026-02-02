@@ -3,6 +3,8 @@ package ui
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/AR0106/mvn-tui/maven"
@@ -55,9 +57,23 @@ func (m *Model) handleProjectCreation() (Model, tea.Cmd) {
 	}
 
 	cmd := m.projectCreation.BuildCreateCommand()
-	m.logBuffer = []string{fmt.Sprintf("Creating project: %s", cmd.String()), ""}
+	folderName := m.projectCreation.GetFolderName()
+	artifactId := m.projectCreation.GetArtifactId()
+
+	m.logBuffer = []string{
+		fmt.Sprintf("Creating project: %s", cmd.String()),
+		fmt.Sprintf("Folder name: %s", folderName),
+		fmt.Sprintf("Maven artifact ID: %s", artifactId),
+		"",
+	}
 	m.running = true
 	m.currentView = ViewLogs
+
+	// Store folder name for post-creation rename if it differs from artifactId
+	if folderName != artifactId {
+		m.pendingModuleName = folderName // Reuse this field to store the desired folder name
+	}
+
 	m.updateLogViewport()
 	return *m, m.runMavenCommand(cmd)
 }
@@ -103,6 +119,12 @@ func (m *Model) quickRun() (Model, tea.Cmd) {
 // handleModuleCreation handles the module creation flow
 func (m *Model) handleModuleCreation() (Model, tea.Cmd) {
 	if m.moduleCreation == nil {
+		return *m, nil
+	}
+
+	// Validate that all required fields are filled and valid
+	if !m.moduleCreation.IsValid() {
+		// Don't proceed if validation fails - just return and let the view show the error
 		return *m, nil
 	}
 
@@ -224,8 +246,31 @@ func (m *Model) handleExecutionComplete(msg executionCompleteMsg) {
 	}
 	m.logBuffer = append(m.logBuffer, "", fmt.Sprintf("Completed with exit code %d in %v", msg.result.ExitCode, msg.result.Duration))
 
-	// If this was a module creation and it succeeded, add module to parent pom.xml
-	if m.pendingModuleName != "" && msg.result.ExitCode == 0 {
+	// If this was a project creation with custom folder name, rename the directory
+	if m.pendingModuleName != "" && msg.result.ExitCode == 0 && m.currentView == ViewLogs && m.projectCreation != nil {
+		desiredFolderName := m.pendingModuleName
+		artifactId := m.projectCreation.GetArtifactId()
+
+		if desiredFolderName != artifactId {
+			oldPath := filepath.Join(m.project.RootPath, artifactId)
+			newPath := filepath.Join(m.project.RootPath, desiredFolderName)
+
+			m.logBuffer = append(m.logBuffer, "", fmt.Sprintf("Renaming project directory from '%s' to '%s'...", artifactId, desiredFolderName))
+
+			err := os.Rename(oldPath, newPath)
+			if err != nil {
+				m.logBuffer = append(m.logBuffer, fmt.Sprintf("Warning: Failed to rename directory: %v", err))
+				m.logBuffer = append(m.logBuffer, fmt.Sprintf("You can manually rename '%s' to '%s'", artifactId, desiredFolderName))
+			} else {
+				m.logBuffer = append(m.logBuffer, fmt.Sprintf("✓ Project directory renamed to '%s'", desiredFolderName))
+				m.logBuffer = append(m.logBuffer, fmt.Sprintf("✓ Project created successfully in '%s'", newPath))
+			}
+		}
+
+		m.pendingModuleName = ""
+		m.projectCreation = nil // Clear project creation state
+	} else if m.pendingModuleName != "" && msg.result.ExitCode == 0 {
+		// This was a module creation and it succeeded, add module to parent pom.xml
 		m.logBuffer = append(m.logBuffer, "", fmt.Sprintf("Adding module '%s' to parent pom.xml...", m.pendingModuleName))
 
 		pomPath := m.project.RootPath + "/pom.xml"
