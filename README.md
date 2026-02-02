@@ -267,12 +267,14 @@ Toggle these options using keys **4-8** in the main view before running tasks.
 ### Run Tasks (Auto-detected based on project type)
 
 - **Run (Spring Boot)**: Available for Spring Boot projects - executes `spring-boot:run`
-- **Run (Java)**: Available for JAR projects - executes `compile exec:java -Dexec.mainClass=<GroupId>.App`
+- **Run (Java)**: Available for JAR projects - executes `compile exec:java -Dexec.mainClass=<detected.MainClass>`
   - Compiles the project first, then runs it
-  - Automatically uses the main class based on your GroupId (e.g., `com.example.App`)
+  - **Automatically detects your main class** by scanning `src/main/java` for classes with a `public static void main` method
+  - Works with any package structure (e.g., `myPackage.App`, `com.example.Application`, etc.)
   - Most reliable option for standard Maven projects
-- **Run (exec:java only)**: Available for JAR projects - executes `exec:java -Dexec.mainClass=<GroupId>.App`
+- **Run (exec:java only)**: Available for JAR projects - executes `exec:java -Dexec.mainClass=<detected.MainClass>`
   - Runs without compiling first (faster if already compiled)
+  - Uses the same automatic main class detection
   - Fallback option if the main run task has issues
 - **Run (Tomcat)**: Available for WAR projects - executes `tomcat7:run`
 
@@ -280,10 +282,16 @@ The available run tasks are automatically detected based on:
 - Packaging type (`jar`, `war`)
 - Dependencies (Spring Boot starter detection)
 - Parent POM (Spring Boot parent detection)
+- **Main class detection**: Automatically scans your source code to find the correct main class
 
-**Note**: For JAR projects, the run tasks assume your main class follows the Maven convention: `<GroupId>.App`. If your main class has a different name, you can either:
-1. Use the Custom Goal feature (press `C`) and enter: `compile exec:java -Dexec.mainClass=your.package.YourMainClass`
-2. Configure the exec-maven-plugin in your `pom.xml` with the correct mainClass
+**How Main Class Detection Works:**
+mvn-tui automatically scans your `src/main/java` directory to find any class with a `public static void main(String[] args)` method. This means:
+- ✅ Works with any package name (doesn't have to match GroupId)
+- ✅ Works with any class name (doesn't have to be named "App")
+- ✅ No configuration needed - it just works
+- ✅ Handles cases where Folder Name differs from Project ID
+
+If no main class is found, it falls back to `<GroupId>.App` as a reasonable default.
 
 Use the **R** key for quick access to run your application!
 

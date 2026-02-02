@@ -1,10 +1,13 @@
 package maven
 
 import (
+	"bufio"
 	"encoding/xml"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 // Project represents a Maven project
@@ -185,4 +188,83 @@ func (p *Project) GetEnabledProfiles() []string {
 		}
 	}
 	return enabled
+}
+
+// FindMainClass searches for a Java class with a main method in the project
+// It returns the fully qualified class name (e.g., "com.example.App")
+func (p *Project) FindMainClass() string {
+	// Common paths to search for main classes
+	searchPaths := []string{
+		filepath.Join(p.RootPath, "src", "main", "java"),
+	}
+
+	// Regular expressions to match package and main method
+	packageRegex := regexp.MustCompile(`^\s*package\s+([\w.]+)\s*;`)
+	classRegex := regexp.MustCompile(`^\s*public\s+class\s+(\w+)`)
+	mainRegex := regexp.MustCompile(`public\s+static\s+void\s+main\s*\(\s*String\s*\[\s*\]\s*\w+\s*\)`)
+
+	for _, searchPath := range searchPaths {
+		if _, err := os.Stat(searchPath); os.IsNotExist(err) {
+			continue
+		}
+
+		// Walk through the directory tree
+		var mainClass string
+		filepath.Walk(searchPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil || mainClass != "" {
+				return nil
+			}
+
+			// Only process .java files
+			if info.IsDir() || !strings.HasSuffix(path, ".java") {
+				return nil
+			}
+
+			// Read and parse the file
+			file, err := os.Open(path)
+			if err != nil {
+				return nil
+			}
+			defer file.Close()
+
+			var packageName string
+			var className string
+			hasMain := false
+
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				line := scanner.Text()
+
+				// Extract package name
+				if matches := packageRegex.FindStringSubmatch(line); len(matches) > 1 {
+					packageName = matches[1]
+				}
+
+				// Extract class name
+				if matches := classRegex.FindStringSubmatch(line); len(matches) > 1 {
+					className = matches[1]
+				}
+
+				// Check for main method
+				if mainRegex.MatchString(line) {
+					hasMain = true
+				}
+
+				// If we found everything, construct the fully qualified name
+				if packageName != "" && className != "" && hasMain {
+					mainClass = packageName + "." + className
+					return filepath.SkipAll
+				}
+			}
+
+			return nil
+		})
+
+		if mainClass != "" {
+			return mainClass
+		}
+	}
+
+	// Fallback: use groupId.App as a reasonable default
+	return p.GroupID + ".App"
 }

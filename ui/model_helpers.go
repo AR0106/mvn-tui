@@ -33,8 +33,8 @@ func BuiltInTasks(project *maven.Project) []Task {
 
 		// Add exec:java for standard Java projects
 		if project.Packaging == "jar" && !project.HasSpringBoot {
-			// Use a sensible default mainClass based on groupId (e.g., com.example.App)
-			mainClass := project.GroupID + ".App"
+			// Find the actual main class by scanning source files
+			mainClass := project.FindMainClass()
 
 			// Add primary run task with compile first (more reliable)
 			tasks = append(tasks, Task{
