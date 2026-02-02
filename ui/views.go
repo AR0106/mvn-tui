@@ -60,7 +60,7 @@ func (m Model) renderOptionsPane() string {
 		}
 	}
 
-	sb.WriteString("\n\nOptions:\n\n")
+	sb.WriteString("\n\nBuild Options:\n\n")
 
 	checkbox := "[ ]"
 	if m.options.SkipTests {
@@ -79,6 +79,38 @@ func (m Model) renderOptionsPane() string {
 		checkbox = "[✓]"
 	}
 	sb.WriteString(fmt.Sprintf("  %s 3. Update Snapshots\n", checkbox))
+
+	sb.WriteString("\n\nOutput Options:\n\n")
+
+	checkbox = "[ ]"
+	if m.options.Debug {
+		checkbox = "[✓]"
+	}
+	sb.WriteString(fmt.Sprintf("  %s 4. Debug (-X)\n", checkbox))
+
+	checkbox = "[ ]"
+	if m.options.Verbose {
+		checkbox = "[✓]"
+	}
+	sb.WriteString(fmt.Sprintf("  %s 5. Verbose (-v)\n", checkbox))
+
+	checkbox = "[ ]"
+	if m.options.Quiet {
+		checkbox = "[✓]"
+	}
+	sb.WriteString(fmt.Sprintf("  %s 6. Quiet (-q)\n", checkbox))
+
+	checkbox = "[ ]"
+	if m.options.Errors {
+		checkbox = "[✓]"
+	}
+	sb.WriteString(fmt.Sprintf("  %s 7. Show Errors (-e)\n", checkbox))
+
+	checkbox = "[ ]"
+	if m.options.BatchMode {
+		checkbox = "[✓]"
+	}
+	sb.WriteString(fmt.Sprintf("  %s 8. Batch Mode (-B)\n", checkbox))
 
 	return sb.String()
 }
@@ -114,7 +146,7 @@ func (m Model) renderFooter() string {
 	}
 
 	if !m.running {
-		parts = append(parts, "Tab: Switch | Enter: Execute | R: Run | M: Module | D: Dependency | L: Logs | H: History | Q: Quit")
+		parts = append(parts, "Tab: Switch | Enter: Execute | 1-8: Options | R: Run | M: Module | D: Dependency | L: Logs | H: History | Q: Quit")
 	}
 
 	return lipgloss.NewStyle().

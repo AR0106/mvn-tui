@@ -279,6 +279,47 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (bool, tea.Cmd) {
 		m.options.UpdateSnapshots = !m.options.UpdateSnapshots
 		return true, nil
 
+	case "4":
+		// Debug mode is mutually exclusive with verbose and quiet
+		if !m.options.Debug {
+			m.options.Debug = true
+			m.options.Verbose = false
+			m.options.Quiet = false
+		} else {
+			m.options.Debug = false
+		}
+		return true, nil
+
+	case "5":
+		// Verbose mode is mutually exclusive with debug and quiet
+		if !m.options.Verbose {
+			m.options.Verbose = true
+			m.options.Debug = false
+			m.options.Quiet = false
+		} else {
+			m.options.Verbose = false
+		}
+		return true, nil
+
+	case "6":
+		// Quiet mode is mutually exclusive with debug and verbose
+		if !m.options.Quiet {
+			m.options.Quiet = true
+			m.options.Debug = false
+			m.options.Verbose = false
+		} else {
+			m.options.Quiet = false
+		}
+		return true, nil
+
+	case "7":
+		m.options.Errors = !m.options.Errors
+		return true, nil
+
+	case "8":
+		m.options.BatchMode = !m.options.BatchMode
+		return true, nil
+
 	case "r":
 		// Quick run - execute the first run task found
 		if m.currentView == ViewMain {

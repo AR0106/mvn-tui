@@ -11,6 +11,12 @@ type BuildOptions struct {
 	Offline         bool
 	UpdateSnapshots bool
 	Threads         string
+	Debug           bool // -X or --debug
+	Verbose         bool // -v or --verbose (deprecated but still works)
+	Quiet           bool // -q or --quiet
+	Errors          bool // -e or --errors (show full stack traces)
+	BatchMode       bool // -B or --batch-mode (non-interactive)
+	ShowVersion     bool // -V or --show-version
 }
 
 // Command represents a Maven command
@@ -36,7 +42,28 @@ func BuildCommand(project *Project, goals []string, options BuildOptions) Comman
 		args = append(args, "-pl", strings.Join(selectedModules, ","))
 	}
 
-	// Add options
+	// Add output control options (these should come early)
+	if options.Debug {
+		args = append(args, "-X")
+	} else if options.Verbose {
+		// Verbose is mutually exclusive with debug and quiet
+		args = append(args, "-v")
+	} else if options.Quiet {
+		// Quiet is mutually exclusive with debug and verbose
+		args = append(args, "-q")
+	}
+
+	if options.Errors {
+		args = append(args, "-e")
+	}
+	if options.BatchMode {
+		args = append(args, "-B")
+	}
+	if options.ShowVersion {
+		args = append(args, "-V")
+	}
+
+	// Add build options
 	if options.SkipTests {
 		args = append(args, "-DskipTests")
 	}

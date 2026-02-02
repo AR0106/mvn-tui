@@ -40,14 +40,14 @@ func BuiltInTasks(project *maven.Project) []Task {
 			tasks = append(tasks, Task{
 				Name:        "Run (Java)",
 				Description: "Compile and run Java application",
-				Goals:       []string{"compile", "exec:java", "-Dexec.mainClass=" + mainClass, "-q"},
+				Goals:       []string{"compile", "exec:java", "-Dexec.mainClass=" + mainClass},
 			})
 
 			// Add fallback direct exec:java task
 			tasks = append(tasks, Task{
 				Name:        "Run (exec:java only)",
 				Description: "Run with exec plugin (no compile)",
-				Goals:       []string{"exec:java", "-Dexec.mainClass=" + mainClass, "-q"},
+				Goals:       []string{"exec:java", "-Dexec.mainClass=" + mainClass},
 			})
 		}
 
@@ -156,9 +156,11 @@ func (m *Model) updateLogViewport() {
 // initializeModel initializes common model components
 func initializeModel(project *maven.Project, tasks []Task, startedWithoutProject bool) Model {
 	return Model{
-		project:               project,
-		tasks:                 tasks,
-		options:               maven.BuildOptions{},
+		project: project,
+		tasks:   tasks,
+		options: maven.BuildOptions{
+			Quiet: true, // Enable quiet mode by default for cleaner output
+		},
 		history:               []maven.ExecutionResult{},
 		logBuffer:             []string{},
 		currentView:           ViewMain,

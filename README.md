@@ -103,9 +103,20 @@ You can also press **P** from the main view to create a new project at any time.
 - **R**: Quick run - Execute the first available run task for your project
 - **M**: Create new Maven module
 - **D**: Add dependency (common or custom)
+
+**Build Options:**
 - **1**: Toggle "Skip Tests" option
 - **2**: Toggle "Offline" option
 - **3**: Toggle "Update Snapshots" option
+
+**Output Options:**
+- **4**: Toggle Debug mode (-X) - detailed Maven internals
+- **5**: Toggle Verbose mode (-v) - more build information
+- **6**: Toggle Quiet mode (-q) - only errors (enabled by default)
+- **7**: Toggle Show Errors (-e) - full stack traces
+- **8**: Toggle Batch Mode (-B) - non-interactive mode
+
+**Navigation:**
 - **L**: Open log viewer
 - **H**: Open command history
 - **P**: Create new Maven project
@@ -232,10 +243,22 @@ The tool will generate the XML snippet for you to copy into your pom.xml.
 - **Compile**: Compile source code
 - **Test**: Run tests
 - **Package**: Create JAR/WAR
-- **Verify**: Run integration tests
+- **Verify**: Run integration tests  
 - **Install**: Install to local repository
-- **Clean Install**: Clean and install
 
+### Output Control
+
+All tasks respect the output options you've configured:
+
+- **Quiet mode (-q)**: Enabled by default - shows only errors and essential output
+- **Debug mode (-X)**: Shows detailed debug information about Maven's internals
+- **Verbose mode (-v)**: Shows more detailed build information (deprecated)
+- **Show Errors (-e)**: Displays full stack traces when errors occur
+- **Batch Mode (-B)**: Non-interactive mode, useful for CI/CD
+
+Toggle these options using keys **4-8** in the main view before running tasks.
+
+### Spring Boot Projects
 ### Run Tasks (Auto-detected based on project type)
 
 - **Run (Spring Boot)**: Available for Spring Boot projects - executes `spring-boot:run`
@@ -300,6 +323,19 @@ go test ./...
 
 ### Project Creation Issues
 
+**Problem**: How do I see more detailed output from Maven commands?
+
+**Solution**: Use the **Output Options** in the main view:
+- Press **4** to enable Debug mode (-X) for detailed Maven debug information
+- Press **7** to enable Show Errors (-e) to see full stack traces
+- Press **6** to disable Quiet mode if you want to see standard Maven output
+
+By default, Quiet mode (-q) is enabled to reduce output clutter. You can toggle it off with key **6** to see normal Maven output.
+
+**Problem**: Maven commands show too much output.
+
+**Solution**: Press **6** to enable Quiet mode (-q), which shows only errors and essential information. This is enabled by default for a cleaner experience.
+
 **Problem**: How do I change the Java version for my project?
 
 **Solution**: When creating a project, use the **[ ]** keys or **Ctrl+← →** to cycle through all detected Java versions. The tool automatically detects all Java installations on your system and lets you choose which one to use. The selected version will be set in your `pom.xml` as `maven.compiler.source` and `maven.compiler.target`.
@@ -330,6 +366,10 @@ The UI will validate your input and show specific error messages if the Project 
 **Solution**: Make sure to fill in all required fields (Folder Name, Organization, Project ID, Version, and Base Package) before pressing Enter. The UI will show validation errors for any empty or invalid fields. You can also use the ← → arrow keys to change the project type before creating the project.
 
 ### Run Task Issues
+
+**Problem**: I want to see what Maven commands are actually being run.
+
+**Solution**: Check the logs view (press **L**) to see the full Maven command that was executed. You can also enable Debug mode (press **4**) to see even more details about Maven's execution.
 
 **Problem**: `exec:java` fails with "The parameters 'mainClass' for goal org.codehaus.mojo:exec-maven-plugin:X.X.X:java are missing or invalid"
 
