@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"io"
+	"os"
 	"os/exec"
 	"time"
 )
@@ -31,6 +32,9 @@ func Execute(ctx context.Context, cmd Command, workDir string, outputHandler Out
 
 	execCmd := exec.CommandContext(ctx, cmd.Executable, cmd.Args...)
 	execCmd.Dir = workDir
+
+	// Connect stdin to allow interactive input (e.g., Scanner in Java)
+	execCmd.Stdin = os.Stdin
 
 	stdout, err := execCmd.StdoutPipe()
 	if err != nil {
@@ -78,4 +82,37 @@ func streamOutput(r io.Reader, handler OutputHandler, output *[]string) {
 			handler(line)
 		}
 	}
+}
+
+// ExecuteInteractive runs a Maven command in the foreground with full stdin/stdout/stderr access
+// This is used for interactive commands that need user input (e.g., programs using Scanner)
+func ExecuteInteractive(cmd Command, workDir string) (*ExecutionResult, error) {
+	result := &ExecutionResult{
+		Command:   cmd,
+		StartTime: time.Now(),
+		Output:    []string{},
+	}
+
+	execCmd := exec.Command(cmd.Executable, cmd.Args...)
+	execCmd.Dir = workDir
+
+	// Connect stdin, stdout, and stderr directly to the terminal
+	execCmd.Stdin = os.Stdin
+	execCmd.Stdout = os.Stdout
+	execCmd.Stderr = os.Stderr
+
+	err := execCmd.Run()
+	result.Duration = time.Since(result.StartTime)
+
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			result.ExitCode = exitErr.ExitCode()
+		} else {
+			result.Error = err
+		}
+	} else {
+		result.ExitCode = 0
+	}
+
+	return result, nil
 }

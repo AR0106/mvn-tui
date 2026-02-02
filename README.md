@@ -272,10 +272,12 @@ Toggle these options using keys **4-8** in the main view before running tasks.
   - **Automatically detects your main class** by scanning `src/main/java` for classes with a `public static void main` method
   - Works with any package structure (e.g., `myPackage.App`, `com.example.Application`, etc.)
   - Most reliable option for standard Maven projects
+  - **Supports interactive input**: Run tasks temporarily exit the TUI to allow user input (e.g., `Scanner` in Java)
 - **Run (exec:java only)**: Available for JAR projects - executes `exec:java -Dexec.mainClass=<detected.MainClass>`
   - Runs without compiling first (faster if already compiled)
   - Uses the same automatic main class detection
   - Fallback option if the main run task has issues
+  - **Supports interactive input**: Allows programs to read from `System.in`/`Scanner`
 - **Run (Tomcat)**: Available for WAR projects - executes `tomcat7:run`
 
 The available run tasks are automatically detected based on:
@@ -292,6 +294,24 @@ mvn-tui automatically scans your `src/main/java` directory to find any class wit
 - ✅ Handles cases where Folder Name differs from Project ID
 
 If no main class is found, it falls back to `<GroupId>.App` as a reasonable default.
+
+**Interactive Input Support:**
+Run tasks automatically support interactive input! When you execute a Run task:
+- The TUI temporarily suspends and gives full control to your program
+- Your program can read from `System.in`, use `Scanner`, or any other input method
+- All output is displayed in real-time as your program runs
+- Once your program exits, you're returned to the TUI with the complete execution results in the logs view
+- This works seamlessly with programs that need user interaction
+
+Example programs that work:
+```java
+Scanner scanner = new Scanner(System.in);
+System.out.print("Enter your name: ");
+String name = scanner.nextLine();
+System.out.println("Hello, " + name + "!");
+```
+
+The program runs interactively, and when it finishes, you can review all the output in the logs view!
 
 Use the **R** key for quick access to run your application!
 

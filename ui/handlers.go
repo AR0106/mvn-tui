@@ -1,11 +1,16 @@
 package ui
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"time"
 
 	"github.com/AR0106/mvn-tui/maven"
 	tea "github.com/charmbracelet/bubbletea"
@@ -99,6 +104,17 @@ func (m *Model) handleSpace() (Model, tea.Cmd) {
 // executeTask executes a Maven task with the current build options
 func (m *Model) executeTask(task Task) (Model, tea.Cmd) {
 	cmd := maven.BuildCommand(m.project, task.Goals, m.options)
+
+	// Check if this is a Run task that needs interactive input
+	if strings.Contains(task.Name, "Run") {
+		// Set up logs view before interactive execution
+		m.logBuffer = []string{}
+		m.currentView = ViewLogs
+		m.updateLogViewport()
+		// Use interactive execution for Run tasks to support Scanner and other input
+		return *m, m.runInteractiveMavenCommand(cmd)
+	}
+
 	m.logBuffer = []string{fmt.Sprintf("Executing: %s", cmd.String()), ""}
 	m.running = true
 	m.currentView = ViewLogs
@@ -236,11 +252,112 @@ func (m *Model) runMavenCommand(cmd maven.Command) tea.Cmd {
 	}
 }
 
+// ANSI escape code regex to strip color codes and other terminal sequences
+var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+// runInteractiveMavenCommand executes a Maven command interactively with full terminal access
+// This temporarily exits the TUI to allow user input (e.g., Scanner in Java programs)
+func (m *Model) runInteractiveMavenCommand(cmd maven.Command) tea.Cmd {
+	// Create a temporary file to capture full terminal session (including user input)
+	tmpfile, err := os.CreateTemp("", "mvn-tui-typescript-*.txt")
+	if err != nil {
+		return func() tea.Msg {
+			result := &maven.ExecutionResult{
+				Command:   cmd,
+				ExitCode:  1,
+				Error:     err,
+				Output:    []string{fmt.Sprintf("Failed to create temp file: %v", err)},
+				StartTime: time.Now(),
+			}
+			return executionCompleteMsg{result: result}
+		}
+	}
+	tmpfilePath := tmpfile.Name()
+	tmpfile.Close()
+
+	startTime := time.Now()
+
+	// Use script command to capture full terminal session including user input
+	// script -q (quiet) suppresses the "Script started/done" messages
+	// We'll pipe through col -b to remove control characters and backspaces
+	shellCmd := fmt.Sprintf("script -q %s %s %s",
+		tmpfilePath,
+		cmd.Executable,
+		strings.Join(cmd.Args, " "))
+
+	c := exec.Command("sh", "-c", shellCmd)
+	c.Dir = m.project.RootPath
+	c.Stdin = os.Stdin
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+
+	return tea.ExecProcess(c, func(err error) tea.Msg {
+		// Give the file system a moment to flush
+		time.Sleep(100 * time.Millisecond)
+
+		result := &maven.ExecutionResult{
+			Command:   cmd,
+			StartTime: startTime,
+			Duration:  time.Since(startTime),
+			Output:    []string{},
+			ExitCode:  0,
+		}
+
+		// Read captured output from temp file (script command captures everything)
+		outputBytes, readErr := os.ReadFile(tmpfilePath)
+		if readErr == nil {
+			if len(outputBytes) > 0 {
+				// Clean the output by removing control characters using col -b
+				colCmd := exec.Command("col", "-b")
+				colCmd.Stdin = bytes.NewReader(outputBytes)
+				cleanedBytes, colErr := colCmd.Output()
+
+				if colErr == nil && len(cleanedBytes) > 0 {
+					outputBytes = cleanedBytes
+				}
+
+				// Parse the cleaned output and remove ANSI escape codes
+				scanner := bufio.NewScanner(bytes.NewReader(outputBytes))
+				for scanner.Scan() {
+					line := scanner.Text()
+					// Strip ANSI escape codes (colors, cursor movements, etc.)
+					line = ansiRegex.ReplaceAllString(line, "")
+					// Keep all lines including user input
+					result.Output = append(result.Output, line)
+				}
+			}
+		}
+
+		// If no output was captured, add a helpful message
+		if len(result.Output) == 0 {
+			result.Output = append(result.Output, "(Program executed but no output was captured)")
+			result.Output = append(result.Output, "This can happen if the program runs very quickly or produces no output.")
+		}
+
+		// Clean up temp file
+		os.Remove(tmpfilePath)
+
+		// Handle exit code
+		if err != nil {
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				result.ExitCode = exitErr.ExitCode()
+			} else {
+				result.Error = err
+			}
+		}
+
+		return executionCompleteMsg{result: result}
+	})
+}
+
 // handleExecutionComplete processes the completion of a Maven command execution
 func (m *Model) handleExecutionComplete(msg executionCompleteMsg) {
 	m.running = false
 	m.lastResult = msg.result
 	m.history = append(m.history, *msg.result)
+
+	// Ensure we're in logs view to show the output
+	m.currentView = ViewLogs
 
 	// Append all output from the execution result
 	m.logBuffer = append(m.logBuffer, msg.result.Output...)
