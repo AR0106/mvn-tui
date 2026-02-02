@@ -195,7 +195,12 @@ When creating a new project, you'll see:
 - **Version**: Project version (default: 1.0-SNAPSHOT)
 - **Base Package**: Base Java package for your code (e.g., com.example)
 
-**Note**: The Folder Name and Project ID can be different. This allows you to have a folder named "Code 2-2" while Maven uses "code-2-2" as the artifact ID. The project will be created with the Maven artifact ID, then automatically renamed to your desired folder name.
+**Automatic Post-Creation Steps:**
+1. The project is created using Maven archetypes with your selected settings
+2. The Java version in `pom.xml` is automatically updated to match your selection (e.g., `<maven.compiler.source>17</maven.compiler.source>`)
+3. If your Folder Name differs from Project ID, the directory is automatically renamed
+
+**Note**: The Folder Name and Project ID can be different. This allows you to have a folder named "Code 2-2" while Maven uses "code-2-2" as the artifact ID.
 
 ## Module Creation
 
@@ -338,9 +343,17 @@ By default, Quiet mode (-q) is enabled to reduce output clutter. You can toggle 
 
 **Problem**: How do I change the Java version for my project?
 
-**Solution**: When creating a project, use the **[ ]** keys or **Ctrl+← →** to cycle through all detected Java versions. The tool automatically detects all Java installations on your system and lets you choose which one to use. The selected version will be set in your `pom.xml` as `maven.compiler.source` and `maven.compiler.target`.
+**Solution**: When creating a project, use the **[ ]** keys or **Ctrl+← →** to cycle through all detected Java versions. The tool automatically detects all Java installations on your system and lets you choose which one to use. 
 
-If Java detection fails or you want to see which versions were found, the tool will show them in the project creation wizard. Common versions include Java 8, 11, 17, 21, and 25.
+After the project is created, the tool automatically updates the `pom.xml` to set the correct Java version:
+```xml
+<properties>
+  <maven.compiler.source>17</maven.compiler.source>
+  <maven.compiler.target>17</maven.compiler.target>
+</properties>
+```
+
+The archetype's default Java version (usually 1.7) is replaced with your selection. If Java detection fails or you want to see which versions were found, the tool will show them in the project creation wizard. Common versions include Java 8, 11, 17, 21, and 25.
 
 **Problem**: I want my project folder to be named "Code 2-2" (with spaces).
 

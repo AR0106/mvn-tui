@@ -59,11 +59,13 @@ func (m *Model) handleProjectCreation() (Model, tea.Cmd) {
 	cmd := m.projectCreation.BuildCreateCommand()
 	folderName := m.projectCreation.GetFolderName()
 	artifactId := m.projectCreation.GetArtifactId()
+	javaVersion := m.projectCreation.GetSelectedJavaVersion()
 
 	m.logBuffer = []string{
 		fmt.Sprintf("Creating project: %s", cmd.String()),
 		fmt.Sprintf("Folder name: %s", folderName),
 		fmt.Sprintf("Maven artifact ID: %s", artifactId),
+		fmt.Sprintf("Java version: %s", javaVersion.Version),
 		"",
 	}
 	m.running = true
@@ -73,6 +75,9 @@ func (m *Model) handleProjectCreation() (Model, tea.Cmd) {
 	if folderName != artifactId {
 		m.pendingModuleName = folderName // Reuse this field to store the desired folder name
 	}
+
+	// Store Java version for post-creation pom.xml update
+	m.pendingJavaVersion = javaVersion.Version
 
 	m.updateLogViewport()
 	return *m, m.runMavenCommand(cmd)
@@ -246,18 +251,34 @@ func (m *Model) handleExecutionComplete(msg executionCompleteMsg) {
 	}
 	m.logBuffer = append(m.logBuffer, "", fmt.Sprintf("Completed with exit code %d in %v", msg.result.ExitCode, msg.result.Duration))
 
-	// If this was a project creation with custom folder name, rename the directory
-	if m.pendingModuleName != "" && msg.result.ExitCode == 0 && m.currentView == ViewLogs && m.projectCreation != nil {
-		desiredFolderName := m.pendingModuleName
+	// If this was a project creation, handle post-creation tasks
+	if m.projectCreation != nil && msg.result.ExitCode == 0 && m.currentView == ViewLogs {
 		artifactId := m.projectCreation.GetArtifactId()
+		projectPath := filepath.Join(m.project.RootPath, artifactId)
+		desiredFolderName := m.pendingModuleName
 
-		if desiredFolderName != artifactId {
-			oldPath := filepath.Join(m.project.RootPath, artifactId)
+		// Update Java version in pom.xml
+		if m.pendingJavaVersion != "" {
+			pomPath := filepath.Join(projectPath, "pom.xml")
+			m.logBuffer = append(m.logBuffer, "", fmt.Sprintf("Updating Java version to %s in pom.xml...", m.pendingJavaVersion))
+
+			err := maven.UpdateJavaVersion(pomPath, m.pendingJavaVersion)
+			if err != nil {
+				m.logBuffer = append(m.logBuffer, fmt.Sprintf("Warning: Failed to update Java version: %v", err))
+				m.logBuffer = append(m.logBuffer, "You may need to manually update maven.compiler.source and maven.compiler.target")
+			} else {
+				m.logBuffer = append(m.logBuffer, fmt.Sprintf("✓ Java version updated to %s", m.pendingJavaVersion))
+			}
+			m.pendingJavaVersion = ""
+		}
+
+		// Rename directory if needed
+		if desiredFolderName != "" && desiredFolderName != artifactId {
 			newPath := filepath.Join(m.project.RootPath, desiredFolderName)
 
 			m.logBuffer = append(m.logBuffer, "", fmt.Sprintf("Renaming project directory from '%s' to '%s'...", artifactId, desiredFolderName))
 
-			err := os.Rename(oldPath, newPath)
+			err := os.Rename(projectPath, newPath)
 			if err != nil {
 				m.logBuffer = append(m.logBuffer, fmt.Sprintf("Warning: Failed to rename directory: %v", err))
 				m.logBuffer = append(m.logBuffer, fmt.Sprintf("You can manually rename '%s' to '%s'", artifactId, desiredFolderName))
@@ -265,6 +286,8 @@ func (m *Model) handleExecutionComplete(msg executionCompleteMsg) {
 				m.logBuffer = append(m.logBuffer, fmt.Sprintf("✓ Project directory renamed to '%s'", desiredFolderName))
 				m.logBuffer = append(m.logBuffer, fmt.Sprintf("✓ Project created successfully in '%s'", newPath))
 			}
+		} else {
+			m.logBuffer = append(m.logBuffer, fmt.Sprintf("✓ Project created successfully in '%s'", projectPath))
 		}
 
 		m.pendingModuleName = ""

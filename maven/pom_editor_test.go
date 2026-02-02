@@ -68,7 +68,7 @@ func TestAddModuleToPom_ExistingModulesSection(t *testing.T) {
     <artifactId>parent-project</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    
+
     <modules>
         <module>existing-module</module>
     </modules>
@@ -123,7 +123,7 @@ func TestRemoveModuleFromPom(t *testing.T) {
     <artifactId>parent-project</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    
+
     <modules>
         <module>module-one</module>
         <module>module-two</module>
@@ -208,5 +208,152 @@ func TestAddModuleToPom_MultipleAdditions(t *testing.T) {
 		if !strings.Contains(updatedStr, expected) {
 			t.Errorf("Expected to find %s", expected)
 		}
+	}
+}
+
+func TestUpdateJavaVersion_Java17(t *testing.T) {
+	initialPom := `<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>test-project</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.7</maven.compiler.source>
+        <maven.compiler.target>1.7</maven.compiler.target>
+    </properties>
+</project>`
+
+	// Create temp file
+	tmpFile := t.TempDir() + "/pom.xml"
+	err := os.WriteFile(tmpFile, []byte(initialPom), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create temp pom.xml: %v", err)
+	}
+
+	// Update to Java 17
+	err = UpdateJavaVersion(tmpFile, "17")
+	if err != nil {
+		t.Fatalf("UpdateJavaVersion failed: %v", err)
+	}
+
+	// Read updated pom
+	updated, err := os.ReadFile(tmpFile)
+	if err != nil {
+		t.Fatalf("Failed to read updated pom.xml: %v", err)
+	}
+
+	updatedStr := string(updated)
+	t.Logf("Updated POM:\n%s", updatedStr)
+
+	// Verify Java 17 is set
+	if !strings.Contains(updatedStr, "<maven.compiler.source>17</maven.compiler.source>") {
+		t.Error("Expected maven.compiler.source to be 17")
+	}
+	if !strings.Contains(updatedStr, "<maven.compiler.target>17</maven.compiler.target>") {
+		t.Error("Expected maven.compiler.target to be 17")
+	}
+	// Verify old version is gone
+	if strings.Contains(updatedStr, "<maven.compiler.source>1.7</maven.compiler.source>") {
+		t.Error("Old maven.compiler.source (1.7) should be replaced")
+	}
+}
+
+func TestUpdateJavaVersion_Java8(t *testing.T) {
+	initialPom := `<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>test-project</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+    </properties>
+</project>`
+
+	// Create temp file
+	tmpFile := t.TempDir() + "/pom.xml"
+	err := os.WriteFile(tmpFile, []byte(initialPom), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create temp pom.xml: %v", err)
+	}
+
+	// Update to Java 8 (should become 1.8)
+	err = UpdateJavaVersion(tmpFile, "8")
+	if err != nil {
+		t.Fatalf("UpdateJavaVersion failed: %v", err)
+	}
+
+	// Read updated pom
+	updated, err := os.ReadFile(tmpFile)
+	if err != nil {
+		t.Fatalf("Failed to read updated pom.xml: %v", err)
+	}
+
+	updatedStr := string(updated)
+	t.Logf("Updated POM:\n%s", updatedStr)
+
+	// Verify Java 8 is set as 1.8
+	if !strings.Contains(updatedStr, "<maven.compiler.source>1.8</maven.compiler.source>") {
+		t.Error("Expected maven.compiler.source to be 1.8 for Java 8")
+	}
+	if !strings.Contains(updatedStr, "<maven.compiler.target>1.8</maven.compiler.target>") {
+		t.Error("Expected maven.compiler.target to be 1.8 for Java 8")
+	}
+}
+
+func TestUpdateJavaVersion_Java21(t *testing.T) {
+	initialPom := `<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>test-project</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+    </properties>
+</project>`
+
+	// Create temp file
+	tmpFile := t.TempDir() + "/pom.xml"
+	err := os.WriteFile(tmpFile, []byte(initialPom), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create temp pom.xml: %v", err)
+	}
+
+	// Update to Java 21
+	err = UpdateJavaVersion(tmpFile, "21")
+	if err != nil {
+		t.Fatalf("UpdateJavaVersion failed: %v", err)
+	}
+
+	// Read updated pom
+	updated, err := os.ReadFile(tmpFile)
+	if err != nil {
+		t.Fatalf("Failed to read updated pom.xml: %v", err)
+	}
+
+	updatedStr := string(updated)
+
+	// Verify Java 21 is set
+	if !strings.Contains(updatedStr, "<maven.compiler.source>21</maven.compiler.source>") {
+		t.Error("Expected maven.compiler.source to be 21")
+	}
+	if !strings.Contains(updatedStr, "<maven.compiler.target>21</maven.compiler.target>") {
+		t.Error("Expected maven.compiler.target to be 21")
 	}
 }

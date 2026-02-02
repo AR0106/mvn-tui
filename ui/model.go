@@ -64,6 +64,7 @@ type Model struct {
 	ctx                   context.Context
 	cancelFunc            context.CancelFunc
 	pendingModuleName     string // Module name to add to pom.xml after creation
+	pendingJavaVersion    string // Java version to set in pom.xml after project creation
 }
 
 // NewModel creates a new application model with an existing project

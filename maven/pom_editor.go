@@ -152,3 +152,100 @@ func RemoveModuleFromPom(pomPath string, moduleName string) error {
 
 	return os.WriteFile(pomPath, []byte(newContent), 0644)
 }
+
+// UpdateJavaVersion updates the maven.compiler.source and maven.compiler.target in pom.xml
+func UpdateJavaVersion(pomPath string, javaVersion string) error {
+	data, err := os.ReadFile(pomPath)
+	if err != nil {
+		return fmt.Errorf("failed to read pom.xml: %w", err)
+	}
+
+	content := string(data)
+
+	// Handle Java 8 special case - use "1.8" instead of "8"
+	mavenJavaVersion := javaVersion
+	if javaVersion == "8" {
+		mavenJavaVersion = "1.8"
+	}
+
+	// Check if properties section exists
+	if !strings.Contains(content, "<properties>") {
+		return fmt.Errorf("no <properties> section found in pom.xml")
+	}
+
+	// Update maven.compiler.source
+	sourcePattern := "<maven.compiler.source>"
+	if strings.Contains(content, sourcePattern) {
+		// Find and replace the maven.compiler.source value
+		sourceStart := strings.Index(content, sourcePattern)
+		sourceEnd := strings.Index(content[sourceStart:], "</maven.compiler.source>")
+		if sourceEnd == -1 {
+			return fmt.Errorf("malformed maven.compiler.source tag")
+		}
+		sourceEnd += sourceStart
+
+		// Replace the content between the tags
+		before := content[:sourceStart+len(sourcePattern)]
+		after := content[sourceEnd:]
+		content = before + mavenJavaVersion + after
+	} else {
+		// Add maven.compiler.source if it doesn't exist
+		propertiesEnd := strings.Index(content, "</properties>")
+		if propertiesEnd == -1 {
+			return fmt.Errorf("malformed properties section")
+		}
+
+		// Detect indentation
+		indent := "    "
+		lines := strings.Split(content[:propertiesEnd], "\n")
+		if len(lines) > 1 {
+			lastLine := lines[len(lines)-1]
+			trimmed := strings.TrimLeft(lastLine, " \t")
+			if len(lastLine) > len(trimmed) {
+				indent = lastLine[:len(lastLine)-len(trimmed)]
+			}
+		}
+
+		newProperty := fmt.Sprintf("%s<maven.compiler.source>%s</maven.compiler.source>\n", indent, mavenJavaVersion)
+		content = content[:propertiesEnd] + newProperty + content[propertiesEnd:]
+	}
+
+	// Update maven.compiler.target
+	targetPattern := "<maven.compiler.target>"
+	if strings.Contains(content, targetPattern) {
+		// Find and replace the maven.compiler.target value
+		targetStart := strings.Index(content, targetPattern)
+		targetEnd := strings.Index(content[targetStart:], "</maven.compiler.target>")
+		if targetEnd == -1 {
+			return fmt.Errorf("malformed maven.compiler.target tag")
+		}
+		targetEnd += targetStart
+
+		// Replace the content between the tags
+		before := content[:targetStart+len(targetPattern)]
+		after := content[targetEnd:]
+		content = before + mavenJavaVersion + after
+	} else {
+		// Add maven.compiler.target if it doesn't exist
+		propertiesEnd := strings.Index(content, "</properties>")
+		if propertiesEnd == -1 {
+			return fmt.Errorf("malformed properties section")
+		}
+
+		// Detect indentation
+		indent := "    "
+		lines := strings.Split(content[:propertiesEnd], "\n")
+		if len(lines) > 1 {
+			lastLine := lines[len(lines)-1]
+			trimmed := strings.TrimLeft(lastLine, " \t")
+			if len(lastLine) > len(trimmed) {
+				indent = lastLine[:len(lastLine)-len(trimmed)]
+			}
+		}
+
+		newProperty := fmt.Sprintf("%s<maven.compiler.target>%s</maven.compiler.target>\n", indent, mavenJavaVersion)
+		content = content[:propertiesEnd] + newProperty + content[propertiesEnd:]
+	}
+
+	return os.WriteFile(pomPath, []byte(content), 0644)
+}
