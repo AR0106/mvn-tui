@@ -253,7 +253,8 @@ func (m *Model) runMavenCommand(cmd maven.Command) tea.Cmd {
 }
 
 // ANSI escape code regex to strip color codes and other terminal sequences
-var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+// This matches ESC[...m codes and also bare escape sequences
+var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]|\x1b\].*?\x07|\x1b[^\[]*`)
 
 // runInteractiveMavenCommand executes a Maven command interactively with full terminal access
 // This temporarily exits the TUI to allow user input (e.g., Scanner in Java programs)
@@ -322,6 +323,10 @@ func (m *Model) runInteractiveMavenCommand(cmd maven.Command) tea.Cmd {
 					line := scanner.Text()
 					// Strip ANSI escape codes (colors, cursor movements, etc.)
 					line = ansiRegex.ReplaceAllString(line, "")
+					// Also remove any remaining escape characters and common artifacts
+					line = strings.ReplaceAll(line, "\x1b", "")
+					line = strings.ReplaceAll(line, "0m0m", "")
+					line = strings.ReplaceAll(line, "0m", "")
 					// Keep all lines including user input
 					result.Output = append(result.Output, line)
 				}
