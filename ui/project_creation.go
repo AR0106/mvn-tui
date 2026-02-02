@@ -13,10 +13,12 @@ import (
 
 // ProjectCreation represents the project creation flow state
 type ProjectCreation struct {
-	inputs       []textinput.Model
-	focusedInput int
-	archetypes   []Archetype
-	selectedArch int
+	inputs          []textinput.Model
+	focusedInput    int
+	archetypes      []Archetype
+	selectedArch    int
+	javaVersions    []maven.JavaVersion
+	selectedJavaVer int
 }
 
 // Archetype represents a Maven archetype preset
@@ -94,11 +96,29 @@ func NewProjectCreation() ProjectCreation {
 	inputs[4].Prompt = "Base Package: "
 	inputs[4].CharLimit = 100
 
+	// Detect available Java versions
+	javaVersions := maven.DetectJavaVersions()
+	if len(javaVersions) == 0 {
+		// Fallback to common versions if detection fails
+		javaVersions = maven.GetCommonJavaVersions()
+	}
+
+	// Find default version index
+	defaultJavaIndex := 0
+	for i, jv := range javaVersions {
+		if jv.IsDefault {
+			defaultJavaIndex = i
+			break
+		}
+	}
+
 	return ProjectCreation{
-		inputs:       inputs,
-		focusedInput: 0,
-		archetypes:   CommonArchetypes(),
-		selectedArch: DefaultArchetypeIndex,
+		inputs:          inputs,
+		focusedInput:    0,
+		archetypes:      CommonArchetypes(),
+		selectedArch:    DefaultArchetypeIndex,
+		javaVersions:    javaVersions,
+		selectedJavaVer: defaultJavaIndex,
 	}
 }
 
@@ -135,6 +155,14 @@ func (pc *ProjectCreation) Update(msg tea.Msg) tea.Cmd {
 		case "right":
 			// Change archetype with right arrow
 			pc.selectedArch = (pc.selectedArch + 1) % len(pc.archetypes)
+			return nil
+		case "ctrl+left", "[":
+			// Change Java version with Ctrl+left or [
+			pc.selectedJavaVer = (pc.selectedJavaVer - 1 + len(pc.javaVersions)) % len(pc.javaVersions)
+			return nil
+		case "ctrl+right", "]":
+			// Change Java version with Ctrl+right or ]
+			pc.selectedJavaVer = (pc.selectedJavaVer + 1) % len(pc.javaVersions)
 			return nil
 		}
 	}
@@ -195,6 +223,31 @@ func (pc ProjectCreation) View(width, height int, showNoPomMessage bool) string 
 		Foreground(lipgloss.Color("242")).
 		Italic(true)
 	content += hintStyle.Render("(Use ← → arrow keys to change project type)") + "\n\n"
+
+	// Java version selection section
+	content += archetypeStyle.Render("Java Version:") + " "
+
+	// Show all Java versions in a row with the selected one highlighted
+	for i, jv := range pc.javaVersions {
+		if i > 0 {
+			content += " | "
+		}
+		display := "Java " + jv.Version
+		if i == pc.selectedJavaVer {
+			content += selectedStyle.Render("→ " + display + " ←")
+		} else {
+			dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+			content += dimStyle.Render(display)
+		}
+	}
+
+	content += "\n"
+
+	// Show details of selected Java version
+	selectedJava := pc.javaVersions[pc.selectedJavaVer]
+	javaDetails := maven.FormatJavaVersionDisplay(selectedJava)
+	content += descStyle.Render(javaDetails) + "\n"
+	content += hintStyle.Render("(Use [ ] or Ctrl+← → to change Java version)") + "\n\n"
 
 	// Input fields with helpful hints
 	content += pc.inputs[0].View() + "\n"
@@ -295,12 +348,19 @@ func (pc ProjectCreation) getValueOrDefault(index int) string {
 // BuildCreateCommand creates the Maven archetype:generate command
 func (pc ProjectCreation) BuildCreateCommand() maven.Command {
 	arch := pc.archetypes[pc.selectedArch]
+	selectedJava := pc.javaVersions[pc.selectedJavaVer]
 
 	// Use values or fall back to placeholders
 	groupId := pc.getValueOrDefault(1)
 	artifactId := pc.getValueOrDefault(2)
 	version := pc.getValueOrDefault(3)
 	packageName := pc.getValueOrDefault(4)
+
+	// Determine Java version string for Maven
+	javaVersion := selectedJava.Version
+	if javaVersion == "8" {
+		javaVersion = "1.8"
+	}
 
 	args := []string{
 		"archetype:generate",
@@ -312,16 +372,16 @@ func (pc ProjectCreation) BuildCreateCommand() maven.Command {
 		fmt.Sprintf("-DarchetypeGroupId=%s", arch.GroupID),
 		fmt.Sprintf("-DarchetypeArtifactId=%s", arch.ArtifactID),
 		fmt.Sprintf("-DarchetypeVersion=%s", arch.Version),
-		// Set Java version to 1.8 to avoid "Source option 7 is no longer supported" errors
-		"-Dmaven.compiler.source=1.8",
-		"-Dmaven.compiler.target=1.8",
+		// Set Java version based on user selection
+		fmt.Sprintf("-Dmaven.compiler.source=%s", javaVersion),
+		fmt.Sprintf("-Dmaven.compiler.target=%s", javaVersion),
 	}
 
 	return maven.Command{
 		Executable: "mvn",
 		Args:       args,
-		PrettyArgs: fmt.Sprintf("archetype:generate -DgroupId=%s -DartifactId=%s",
-			groupId, artifactId),
+		PrettyArgs: fmt.Sprintf("archetype:generate -DgroupId=%s -DartifactId=%s (Java %s)",
+			groupId, artifactId, selectedJava.Version),
 	}
 }
 
@@ -333,4 +393,9 @@ func (pc ProjectCreation) GetFolderName() string {
 // GetArtifactId returns the Maven artifact ID for the project
 func (pc ProjectCreation) GetArtifactId() string {
 	return pc.getValueOrDefault(2)
+}
+
+// GetSelectedJavaVersion returns the selected Java version
+func (pc ProjectCreation) GetSelectedJavaVersion() maven.JavaVersion {
+	return pc.javaVersions[pc.selectedJavaVer]
 }

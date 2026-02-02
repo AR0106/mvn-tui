@@ -82,6 +82,7 @@ mvn-tui
 ```
 
 The project creation wizard features:
+- **Java version selection**: Choose from all Java versions installed on your machine (use `[` `]` or Ctrl+← → to change)
 - **Flexible folder naming**: Separate "Folder Name" field that can contain spaces (e.g., "Code 2-2")
 - **User-friendly field names**: "Organization" instead of "Group ID", "Project ID" instead of "Artifact ID"
 - **Easy project type selection**: Use ← → arrow keys to switch between Java Application, Spring Boot App, and Web Application
@@ -125,6 +126,7 @@ You can also press **P** from the main view to create a new project at any time.
 ### Project Creation View
 
 - **← / →**: Change project type (Java Application, Spring Boot App, Web Application)
+- **[ / ]** or **Ctrl+← / Ctrl+→**: Change Java version
 - **Tab / Shift+Tab / ↑/↓**: Navigate between input fields
 - **Enter**: Create project
 - **Esc**: Cancel and return to main view (or Q to quit if no project loaded)
@@ -161,8 +163,21 @@ mvn-tui/
 
 ## Project Creation Fields
 
-When creating a new project, you'll be prompted for:
+When creating a new project, you'll see:
 
+**Project Type Selection:**
+- Use **← →** arrow keys to choose between: Java Application, Spring Boot App, or Web Application
+
+**Java Version Selection:**
+- Use **[ ]** or **Ctrl+← →** to choose your Java version
+- Automatically detects all Java installations on your machine
+- Shows the current/default Java version
+- Example: `Java 25 (Oracle) [Current]` or `Java 17 (Eclipse Temurin)`
+- On macOS: Uses `/usr/libexec/java_home` to find all JDKs
+- On Linux: Checks `/usr/lib/jvm`, `/usr/java`, and `update-alternatives`
+- On Windows: Checks common installation directories
+
+**Input Fields:**
 - **Folder Name**: Directory name for your project (can contain spaces, e.g., "Code 2-2")
 - **Organization**: Maven group ID (e.g., com.example) - must be a valid Java package name
 - **Project ID**: Maven artifact ID (e.g., "code-2-2") - no spaces, use hyphens or underscores
@@ -284,6 +299,12 @@ go test ./...
 ## Troubleshooting
 
 ### Project Creation Issues
+
+**Problem**: How do I change the Java version for my project?
+
+**Solution**: When creating a project, use the **[ ]** keys or **Ctrl+← →** to cycle through all detected Java versions. The tool automatically detects all Java installations on your system and lets you choose which one to use. The selected version will be set in your `pom.xml` as `maven.compiler.source` and `maven.compiler.target`.
+
+If Java detection fails or you want to see which versions were found, the tool will show them in the project creation wizard. Common versions include Java 8, 11, 17, 21, and 25.
 
 **Problem**: I want my project folder to be named "Code 2-2" (with spaces).
 
